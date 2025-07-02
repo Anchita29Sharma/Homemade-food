@@ -1,4 +1,4 @@
-// ----- Image Slider -----
+// ========== Image Slider ==========
 let currentSlide = 0;
 const slides = document.querySelectorAll(".slide");
 const dots = document.querySelectorAll(".slider-dot");
@@ -7,46 +7,53 @@ const nextBtn = document.querySelector(".next-btn");
 const sliderContainer = document.querySelector(".slider-container");
 let slideInterval;
 
-function showSlide(index) {
+const showSlide = (index) => {
+  if (!slides.length || !dots.length) return;
+
   slides.forEach((slide, i) => {
     slide.classList.toggle("active", i === index);
-    dots[i].classList.toggle("active", i === index);
+    dots[i]?.classList.toggle("active", i === index);
   });
   currentSlide = index;
+};
+
+const nextSlide = () => {
+  showSlide((currentSlide + 1) % slides.length);
+};
+
+const prevSlide = () => {
+  showSlide((currentSlide - 1 + slides.length) % slides.length);
+};
+
+if (nextBtn && prevBtn) {
+  nextBtn.addEventListener("click", nextSlide);
+  prevBtn.addEventListener("click", prevSlide);
 }
 
-function nextSlide() {
-  let nextIndex = (currentSlide + 1) % slides.length;
-  showSlide(nextIndex);
-}
-
-function prevSlide() {
-  let prevIndex = (currentSlide - 1 + slides.length) % slides.length;
-  showSlide(prevIndex);
-}
-
-nextBtn.addEventListener("click", nextSlide);
-prevBtn.addEventListener("click", prevSlide);
 dots.forEach((dot, index) => {
   dot.addEventListener("click", () => showSlide(index));
 });
 
-function startAutoSlide() {
+const startAutoSlide = () => {
   slideInterval = setInterval(nextSlide, 5000);
-}
+};
 
-function stopAutoSlide() {
+const stopAutoSlide = () => {
   clearInterval(slideInterval);
-}
+};
 
-sliderContainer.addEventListener("mouseenter", stopAutoSlide);
-sliderContainer.addEventListener("mouseleave", startAutoSlide);
+if (sliderContainer) {
+  sliderContainer.addEventListener("mouseenter", stopAutoSlide);
+  sliderContainer.addEventListener("mouseleave", startAutoSlide);
+}
 
 showSlide(currentSlide);
 startAutoSlide();
 
-// ----- Stats Counter Animation -----
+
+// ========== Stats Counter ==========
 const counters = document.querySelectorAll(".stat-number");
+let statsAnimated = false;
 
 const animateCount = (el, target, isPercent = false) => {
   let current = 0;
@@ -66,19 +73,24 @@ const animateCount = (el, target, isPercent = false) => {
   updateCounter();
 };
 
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      counters.forEach(counter => {
-        const target = parseInt(counter.getAttribute("data-target"));
-        const isPercent = counter.textContent.includes("%");
-        animateCount(counter, target, isPercent);
-      });
-      observer.disconnect(); // Run only once
-    }
-  });
-}, { threshold: 0.5 });
+const observer = new IntersectionObserver(
+  (entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !statsAnimated) {
+        counters.forEach(counter => {
+          const target = parseInt(counter.getAttribute("data-target"), 10);
+          const isPercent = counter.dataset.type === "percent";
+          animateCount(counter, target, isPercent);
+        });
+        statsAnimated = true;
+        observer.disconnect(); // Only once
+      }
+    });
+  },
+  { threshold: 0.5 }
+);
 
 const statsSection = document.querySelector("#story");
-if (statsSection) observer.observe(statsSection);
-
+if (statsSection && counters.length > 0) {
+  observer.observe(statsSection);
+}
